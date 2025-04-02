@@ -16,7 +16,8 @@ Table of contents:
 * [Option #3: `index.openCursor()`](#option-3-indexopencursor)
 * [Option #4: `index.openCursor()` without the total number of items](#option-4-indexopencursor-without-the-total-number-of-items)
 * [Option #5: `index.openCursor()` with multiple indexes](#option-5-indexopencursor-with-multiple-indexes)
-* [Option #6: use server-side pagination](#option-6-use-server-side-pagination)
+* [Option #6: bulk iteration with `index.getAll(query, count)`](#option-6-bulk-iteration-with-indexgetallquery-count)
+* [Option #7: use server-side pagination](#option-7-use-server-side-pagination)
 <!-- TOC -->
 
 DB schema:
@@ -363,7 +364,133 @@ Cons:
 - we need a lot of indexes (# of criteria * # of sorting option)
 
 
-## Option #6: use server-side pagination
+## Option #6: bulk iteration with `index.getAll(query, count)`
+
+Iterating with a cursor over a lot of documents is quite slow and can be made faster with `store.getAll(query, count)`:
+
+```js
+function bulkIterate (index, query, direction, bulkSize) {
+  if (direction !== "next") {
+    return index.iterate(query, direction);
+  }
+
+  return (async function*() {
+    let offset = query;
+
+    while (true) {
+      const items = await index.getAll(offset, bulkSize);
+
+      if (items.length === 0) {
+        break;
+      }
+
+      for (const item of items) {
+        yield { value: item };
+      }
+
+      const lastItem = items[items.length - 1];
+      const lastItemId = Array.isArray(index.keyPath) ? index.keyPath.map((k) => lastItem[k]) : lastItem[index.keyPath];
+
+      if (query instanceof IDBKeyRange && query.upper !== undefined) {
+        offset = IDBKeyRange.bound(lastItemId, query.upper, true, query.upperOpen);
+      } else {
+        offset = IDBKeyRange.lowerBound(lastItemId, true);
+      }
+    }
+  })();
+}
+
+async function loadItems(filters: Filters, options: Options) {
+  function matches(item: Invoice) {
+    const matchesReference =
+      !filters.search || item.reference.includes(filters.search);
+    const matchesCustomerId =
+      !filters.customerId || filters.customerId === item.customerId;
+    const matchesStatus = filters.status[item.status];
+
+    return matchesReference && matchesCustomerId && matchesStatus;
+  }
+
+  const items = [];
+  let totalItems = 0;
+  let hasMore = false;
+
+  const db = await getDB();
+  const tx = db.transaction(["invoices"], "readonly");
+
+  let index;
+  let iterator;
+  const direction = options.sortBy[0].order === "asc" ? "next" : "prev";
+  const bulkSize = 2 * options.itemsPerPage; // some items will be filtered
+
+  if (filters.search) {
+    index = tx.objectStore("invoices").index("by-reference");
+    iterator = bulkIterate(index,
+      IDBKeyRange.bound(filters.search, filters.search + "\uffff"),
+      direction,
+      bulkSize
+    );
+  } else if (filters.customerId) {
+    switch (options.sortBy[0].key) {
+      case "reference":
+        index = tx.objectStore("invoices").index("by-customer-reference");
+        break;
+      default:
+        index = tx.objectStore("invoices").index("by-customer-date-reference");
+        break;
+    }
+    iterator = bulkIterate(
+      index,
+      IDBKeyRange.bound([filters.customerId], [filters.customerId, [], []]),
+      direction,
+      bulkSize,
+    );
+  } else {
+    switch (options.sortBy[0].key) {
+      case "reference":
+        index = tx.objectStore("invoices").index("by-reference");
+        break;
+      default:
+        index = tx.objectStore("invoices").index("by-date-reference");
+        break;
+    }
+    iterator = bulkIterate(index, null, direction, bulkSize);
+  }
+
+  for await (const { value } of iterator) {
+    if (!matches(value)) {
+      continue;
+    }
+
+    totalItems++;
+
+    const shouldSkip = totalItems <= (options.page - 1) * options.itemsPerPage;
+
+    if (shouldSkip) {
+      continue;
+    }
+
+    if (items.length < options.itemsPerPage) {
+      items.push(value);
+    } else {
+      hasMore = true;
+      break;
+    }
+  }
+
+  return {
+    items,
+    hasMore,
+  };
+}
+```
+
+Note: this only works when sorting in ascending order, as `index.getAll(query, count)` does not support providing a `direction` option like with `index.openCursor(range, direction)`.
+
+Related: https://github.com/w3c/IndexedDB/issues/130
+
+
+## Option #7: use server-side pagination
 
 Or, instead of implementing a query planner on our own, we can query the server and let the one provided with our DBMS do the hard work:
 
@@ -377,8 +504,6 @@ Cons:
 
 - this won't work offline
 
-
-Final note: we could also have used [`index.getAll(query, count)`](https://developer.mozilla.org/en-US/docs/Web/API/IDBIndex/getAll), which is faster than iterating over the index one by one. However, there is [currently](https://github.com/MicrosoftEdge/MSEdgeExplainers/blob/main/IndexedDbGetAllEntries/explainer.md) no way to provide a direction for the iteration, which means we would have to use `index.getAll(query, count)` for the ascending order and `index.iterate(query, "prev")` for the descending order, which greatly complicates the code.
 
 
 

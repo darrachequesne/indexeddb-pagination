@@ -23,6 +23,10 @@
         <v-list-item to="/Option5">
           <v-list-item-title>Option 5</v-list-item-title>
         </v-list-item>
+
+        <v-list-item to="/Option6">
+          <v-list-item-title>Option 6</v-list-item-title>
+        </v-list-item>
       </v-list>
     </v-navigation-drawer>
 
