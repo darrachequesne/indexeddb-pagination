@@ -118,7 +118,10 @@ async function loadItems(filters: Filters, options: Options) {
   <v-container>
     <h1>Option 3: <code>index.openCursor()</code></h1>
 
-    <InvoiceTableFilters :filters="filters" @update:filters="onFiltersUpdate" />
+    <InvoiceTableFilters
+      :filters="filters"
+      @update:filters="onFiltersUpdate"
+    />
 
     <InvoiceTableWithExternalPagination
       :items="items"
@@ -128,6 +131,8 @@ async function loadItems(filters: Filters, options: Options) {
       @update:options="onOptionsUpdate"
     />
 
-    <p class="mt-3">Loaded {{ items.length }} items in {{ loadDuration }} ms</p>
+    <p class="mt-3">
+      Loaded {{ items.length }} items in {{ loadDuration }} ms
+    </p>
   </v-container>
 </template>

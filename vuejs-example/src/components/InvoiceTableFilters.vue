@@ -52,7 +52,10 @@ function onStatusUpdate() {
       @update:model-value="onSearchUpdate"
     />
 
-    <CustomerPicker class="mw-200 ml-3" @input="onCustomerUpdate" />
+    <CustomerPicker
+      class="mw-200 ml-3"
+      @input="onCustomerUpdate"
+    />
 
     <v-checkbox
       v-model="filters.status.draft"

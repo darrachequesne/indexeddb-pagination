@@ -93,9 +93,7 @@ function nextPage() {
           @click="previousPage()"
         />
 
-        <span class="align-content-center ml-3 mr-3"
-          >Page {{ options.page }}</span
-        >
+        <span class="align-content-center ml-3 mr-3">Page {{ options.page }}</span>
 
         <v-btn
           icon="mdi-chevron-right"

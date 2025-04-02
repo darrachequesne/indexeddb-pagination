@@ -124,6 +124,8 @@ onMounted(async () => {
       :options="options"
     />
 
-    <p class="mt-3">Loaded {{ items.length }} items in {{ loadDuration }} ms</p>
+    <p class="mt-3">
+      Loaded {{ items.length }} items in {{ loadDuration }} ms
+    </p>
   </v-container>
 </template>

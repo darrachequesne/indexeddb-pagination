@@ -126,7 +126,10 @@ async function loadItems(filters: Filters, options: Options) {
       items
     </h1>
 
-    <InvoiceTableFilters :filters="filters" @update:filters="onFiltersUpdate" />
+    <InvoiceTableFilters
+      :filters="filters"
+      @update:filters="onFiltersUpdate"
+    />
 
     <InvoiceTableWithCustomFooter
       :items="items"
@@ -136,6 +139,8 @@ async function loadItems(filters: Filters, options: Options) {
       @update:options="onOptionsUpdate"
     />
 
-    <p class="mt-3">Loaded {{ items.length }} items in {{ loadDuration }} ms</p>
+    <p class="mt-3">
+      Loaded {{ items.length }} items in {{ loadDuration }} ms
+    </p>
   </v-container>
 </template>

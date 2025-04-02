@@ -74,7 +74,10 @@ onMounted(async () => {
   <v-container>
     <h1>Option 1: <code>store.getAll()</code></h1>
 
-    <InvoiceTableFilters :filters="filters" @update:filters="onFiltersUpdate" />
+    <InvoiceTableFilters
+      :filters="filters"
+      @update:filters="onFiltersUpdate"
+    />
 
     <InvoiceTable
       :items="filteredItems"
@@ -82,6 +85,8 @@ onMounted(async () => {
       :options="options"
     />
 
-    <p class="mt-3">Loaded {{ items.length }} items in {{ loadDuration }} ms</p>
+    <p class="mt-3">
+      Loaded {{ items.length }} items in {{ loadDuration }} ms
+    </p>
   </v-container>
 </template>

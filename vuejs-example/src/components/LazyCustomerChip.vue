@@ -19,7 +19,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <v-skeleton-loader v-if="isLoading" type="text" />
+  <v-skeleton-loader
+    v-if="isLoading"
+    type="text"
+  />
   <span v-else>{{ customer?.name || "-" }}</span>
 </template>
 
