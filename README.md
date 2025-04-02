@@ -291,13 +291,8 @@ async function loadItems(filters, options) {
 
   if (filters.search) {
     index = tx.objectStore("invoices").index("by-reference");
-    const nextLastChar = String.fromCharCode(
-      filters.search.charCodeAt(filters.search.length - 1) + 1,
-    );
-    const upperBound =
-      filters.search.substring(0, filters.search.length - 1) + nextLastChar;
     iterator = index.iterate(
-      IDBKeyRange.bound(filters.search, upperBound, false, true),
+      IDBKeyRange.bound(filters.search, filters.search + "\uffff"),
       direction,
     );
   } else if (filters.customerId) {
@@ -355,7 +350,7 @@ async function loadItems(filters, options) {
 
 Notes:
 
-- when searching by reference, we compute the upper bound based on the user input (for example, `I12` is converted into the `[I12, I13[` range)
+- when searching by reference, we compute the upper bound based on the user input
 - when searching by customer, we use an empty array as the upper bound, as it's greater than any string [per the spec](https://w3c.github.io/IndexedDB/#key-construct)
 
 Pros:
